@@ -1762,91 +1762,91 @@ function buildBillHTML(items, month) {
 <style>
   @page { size: A5 portrait; margin: 0; }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{font-family:'Sarabun',sans-serif;color:#1a1916;background:#e5e5e5;font-size:10pt;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{font-family:'Sarabun',sans-serif;color:#222222;background:#e7e7e7;font-size:9pt;line-height:1.38;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .invoice{
     width:148mm;height:210mm;
-    padding:11mm 11mm 9mm;
+    padding:12mm 12mm 9mm;
     page-break-after:always;
     position:relative;
     background:#fff;
     margin:8px auto;
-    box-shadow:0 2px 12px rgba(0,0,0,.08);
+    box-shadow:0 1px 8px rgba(0,0,0,.06);
     overflow:hidden;
   }
   .invoice:last-child{page-break-after:auto}
   .mono{font-family:'IBM Plex Mono',monospace;font-feature-settings:"tnum"}
 
   /* Letterhead */
-  .lh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a1916;padding-bottom:7px;margin-bottom:10px;gap:8px}
-  .lh-l{display:flex;align-items:flex-start;gap:9px;flex:1;min-width:0}
-  .lh-logo{width:36px;height:36px;flex-shrink:0;background:#1a1916;color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18pt;letter-spacing:-0.02em}
+  .lh{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #222222;padding-bottom:8px;margin-bottom:11px;gap:10px}
+  .lh-l{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+  .lh-logo{width:30px;height:30px;flex-shrink:0;background:#1a1a1a;color:#fff;border-radius:3px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13pt;letter-spacing:-0.02em}
   .lh-l-text{min-width:0}
-  .lh-name{font-size:14pt;font-weight:700;letter-spacing:-0.02em;line-height:1.1}
-  .lh-tag{font-size:8pt;color:#6b6860;margin-top:1px}
-  .lh-meta{font-size:8pt;color:#555;margin-top:2px;line-height:1.35}
+  .lh-name{font-size:11pt;font-weight:700;letter-spacing:-0.01em;line-height:1.12;color:#1a1a1a}
+  .lh-tag{font-size:7pt;color:#8a8a8a;margin-top:1px;letter-spacing:0.01em}
+  .lh-meta{font-size:7pt;color:#6d6d6d;margin-top:2px;line-height:1.4}
   .lh-r{text-align:right;flex-shrink:0}
-  .lh-r .lbl{color:#9c9a93;font-size:7pt;letter-spacing:0.06em;text-transform:uppercase;margin-top:3px;font-weight:600}
+  .lh-r .lbl{color:#9a9a9a;font-size:6.5pt;letter-spacing:0.08em;text-transform:uppercase;margin-top:3px;font-weight:600}
   .lh-r .lbl:first-child{margin-top:0}
-  .lh-r .val{font-weight:700;font-size:9.5pt;color:#1a1916}
-  .lh-r .due{color:#dc2626}
+  .lh-r .val{font-weight:700;font-size:8.5pt;color:#1a1a1a}
+  .lh-r .due{color:#333333;text-decoration:underline;text-underline-offset:2px}
 
   /* Doc title */
-  .title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;padding-left:9px;border-left:3.5px solid #1a1916}
-  .title .t{font-size:11.5pt;font-weight:700;line-height:1.1;letter-spacing:-0.01em}
-  .title .t small{font-weight:400;color:#6b6860;font-size:8pt;margin-left:6px;letter-spacing:0}
-  .title .period{font-size:8.5pt;color:#6b6860;font-weight:600}
+  .title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;padding-left:9px;border-left:2px solid #1a1a1a}
+  .title .t{font-size:10pt;font-weight:700;line-height:1.12;letter-spacing:0.01em;text-transform:uppercase}
+  .title .t small{font-weight:400;color:#8a8a8a;font-size:7.5pt;margin-left:6px;letter-spacing:0;text-transform:none}
+  .title .period{font-size:8pt;color:#6d6d6d;font-weight:600}
 
   /* Info grid */
-  .info{display:grid;grid-template-columns:1.2fr 1fr;gap:7px;margin-bottom:9px}
-  .info-box{background:#f7f6f2;border:1px solid #e2e0d6;border-radius:5px;padding:7px 9px}
-  .info-box .h{font-size:7pt;color:#9c9a93;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;font-weight:700}
-  .info-box .name{font-size:10.5pt;font-weight:700;line-height:1.15;color:#1a1916}
-  .info-box .row{font-size:8.5pt;color:#444;margin-top:1px}
+  .info{display:grid;grid-template-columns:1.2fr 1fr;gap:8px;margin-bottom:10px}
+  .info-box{background:#fff;border:1px solid #dcdcdc;border-radius:3px;padding:7px 10px}
+  .info-box .h{font-size:6.5pt;color:#9a9a9a;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;font-weight:700}
+  .info-box .name{font-size:9.5pt;font-weight:700;line-height:1.18;color:#1a1a1a}
+  .info-box .row{font-size:8pt;color:#555555;margin-top:1px}
 
   /* Items table */
-  table.items{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:9.5pt;table-layout:fixed}
-  table.items thead th{background:#1a1916;color:#fff;padding:6px 8px;text-align:left;font-weight:600;font-size:8pt;letter-spacing:0.04em;text-transform:uppercase}
+  table.items{width:100%;border-collapse:collapse;margin-bottom:9px;font-size:8.5pt;table-layout:fixed}
+  table.items thead th{background:#fff;color:#222222;padding:5px 8px;text-align:left;font-weight:700;font-size:6.5pt;letter-spacing:0.08em;text-transform:uppercase;border-bottom:1px solid #222222;border-top:1px solid #222222}
   table.items thead th.r{text-align:right}
-  table.items tbody td{padding:6px 8px;border-bottom:1px solid #e8e6de;vertical-align:top;word-wrap:break-word}
+  table.items tbody td{padding:6px 8px;border-bottom:1px solid #ececec;vertical-align:top;word-wrap:break-word}
   table.items tbody td.r{text-align:right}
-  table.items tbody tr:last-child td{border-bottom:1.5px solid #1a1916}
-  .it-name{font-weight:600;color:#1a1916;font-size:9.5pt;line-height:1.2}
-  .it-detail{font-size:7.5pt;color:#9c9a93;margin-top:1px}
+  table.items tbody tr:last-child td{border-bottom:1px solid #222222}
+  .it-name{font-weight:600;color:#222222;font-size:8.5pt;line-height:1.22}
+  .it-detail{font-size:7pt;color:#9a9a9a;margin-top:1px}
 
   /* Totals */
-  .totals{display:flex;justify-content:flex-end;margin-bottom:9px}
+  .totals{display:flex;justify-content:flex-end;margin-bottom:10px}
   .totals-box{width:62%}
-  .t-row{display:flex;justify-content:space-between;padding:3px 10px;font-size:9pt;color:#444}
-  .t-row .sep{border-top:1px dashed #ccc9bc;height:0;margin:2px 0}
-  .t-grand{background:#1a1916;color:#fff;font-weight:700;border-radius:5px;padding:9px 12px;margin-top:4px;display:flex;justify-content:space-between;align-items:center}
-  .t-grand .lbl{font-size:9.5pt;letter-spacing:0.02em}
-  .t-grand .baht{font-size:14pt;letter-spacing:-0.01em}
+  .t-row{display:flex;justify-content:space-between;padding:3px 10px;font-size:8.5pt;color:#555555}
+  .t-row .sep{border-top:1px solid #e2e2e2;height:0;margin:3px 0}
+  .t-grand{background:#fff;color:#1a1a1a;font-weight:700;border-radius:0;padding:7px 10px;margin-top:5px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #1a1a1a;border-bottom:2px solid #1a1a1a}
+  .t-grand .lbl{font-size:8.5pt;letter-spacing:0.04em;text-transform:uppercase}
+  .t-grand .baht{font-size:11.5pt;letter-spacing:-0.01em}
 
   /* Payment block */
-  .pay{background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:7px 10px;font-size:8.5pt;color:#7c2d12;margin-bottom:8px}
-  .pay .h{font-weight:700;color:#92400e;margin-bottom:3px;font-size:9pt;display:flex;align-items:center;gap:4px}
-  .pay .grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:2px}
-  .pay .row .k{color:#a16207;font-weight:600;margin-right:3px}
-  .pay .note{margin-top:4px;font-size:8pt;color:#78350f;font-style:italic}
+  .pay{background:#fff;border:1px solid #dcdcdc;border-radius:3px;padding:8px 10px;font-size:8pt;color:#555555;margin-bottom:9px}
+  .pay .h{font-weight:700;color:#1a1a1a;margin-bottom:4px;font-size:7pt;display:flex;align-items:center;gap:4px;text-transform:uppercase;letter-spacing:0.06em}
+  .pay .grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;margin-top:3px}
+  .pay .row .k{color:#8a8a8a;font-weight:600;margin-right:3px}
+  .pay .note{margin-top:5px;padding-top:5px;border-top:1px solid #ececec;font-size:7.5pt;color:#777777;font-style:italic}
 
   /* Signatures */
-  .sigs{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px;font-size:8.5pt;color:#444}
+  .sigs{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:8px;font-size:8pt;color:#555555}
   .sig{text-align:center}
-  .sig .line{border-bottom:1px dotted #888;height:20px;margin:0 6px}
-  .sig .nm{margin-top:1px}
-  .sig .role{color:#9c9a93;font-size:7.5pt;margin-top:1px;font-weight:600;letter-spacing:0.03em}
+  .sig .line{border-bottom:1px solid #aaaaaa;height:22px;margin:0 6px}
+  .sig .nm{margin-top:2px;color:#333333}
+  .sig .role{color:#9a9a9a;font-size:7pt;margin-top:1px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
 
   /* Footer fixed */
-  .ft{position:absolute;bottom:5mm;left:11mm;right:11mm;text-align:center;font-size:7pt;color:#9c9a93;border-top:1px solid #e8e6de;padding-top:3px;display:flex;justify-content:space-between}
-  .ft .br{font-weight:700;color:#6b6860;letter-spacing:0.04em}
+  .ft{position:absolute;bottom:5mm;left:12mm;right:12mm;text-align:center;font-size:6.5pt;color:#9a9a9a;border-top:1px solid #ececec;padding-top:4px;display:flex;justify-content:space-between}
+  .ft .br{font-weight:700;color:#6d6d6d;letter-spacing:0.06em}
 
   /* PAID / OVERDUE stamp */
-  .stamp{position:absolute;top:46mm;right:14mm;transform:rotate(-12deg);border:3px solid;padding:4px 14px;border-radius:6px;font-size:18pt;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:.78;pointer-events:none}
-  .stamp.paid{color:#16a34a;border-color:#16a34a}
-  .stamp.paid small{display:block;font-size:7pt;font-weight:500;letter-spacing:0.04em;color:#15803d;text-align:center;text-transform:none;margin-top:1px}
-  .stamp.overdue{color:#dc2626;border-color:#dc2626}
-  .overdue-banner{background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:6px 10px;font-size:9pt;color:#991b1b;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
-  .overdue-banner .lbl{font-weight:700}
+  .stamp{position:absolute;top:46mm;right:14mm;transform:rotate(-10deg);border:2px solid;padding:4px 14px;border-radius:3px;font-size:13pt;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:.5;pointer-events:none}
+  .stamp.paid{color:#3a3a3a;border-color:#3a3a3a}
+  .stamp.paid small{display:block;font-size:6.5pt;font-weight:500;letter-spacing:0.04em;color:#6d6d6d;text-align:center;text-transform:none;margin-top:1px}
+  .stamp.overdue{color:#3a3a3a;border-color:#3a3a3a}
+  .overdue-banner{background:#fff;border:1px solid #1a1a1a;border-radius:0;padding:6px 10px;font-size:8pt;color:#222222;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border-left:3px solid #1a1a1a}
+  .overdue-banner .lbl{font-weight:700;text-transform:uppercase;letter-spacing:0.04em}
 
   @media print {
     html,body{background:#fff}
@@ -1901,7 +1901,7 @@ ${items.map(({room,m,mc,total,payment,status})=>{
     </div>
     <div class="info-box">
       <div class="h">ห้องพัก · ROOM</div>
-      <div class="name">ห้อง ${esc(room.label)}${room.isSuite?" <span style='font-size:7.5pt;background:#7c3aed;color:#fff;padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle'>SUITE</span>":""}</div>
+      <div class="name">ห้อง ${esc(room.label)}${room.isSuite?" <span style='font-size:7.5pt;background:#1a1a1a;color:#fff;padding:1px 5px;border-radius:3px;margin-left:3px;vertical-align:middle'>SUITE</span>":""}</div>
       <div class="row">รอบบิล ${esc(thMonthLabel(month))}</div>
     </div>
   </div>
@@ -1942,8 +1942,8 @@ ${items.map(({room,m,mc,total,payment,status})=>{
   <div class="totals"><div class="totals-box">
     <div class="t-row"><span>รวมค่าเช่า</span><span class="mono">${fmtMoney(room.price)}</span></div>
     <div class="t-row"><span>รวมค่าสาธารณูปโภค</span><span class="mono">${fmtMoney(mc.wCost+mc.eCost)}</span></div>
-    ${(isPartial||isPaid)&&paid>0?`<div class="t-row" style="color:#16a34a"><span>− รับชำระแล้ว</span><span class="mono">−${fmtMoney(paid)}</span></div>`:""}
-    <div class="t-grand" style="${isPaid?"background:#16a34a":isOverdue?"background:#dc2626":""}">
+    ${(isPartial||isPaid)&&paid>0?`<div class="t-row"><span>− รับชำระแล้ว</span><span class="mono">−${fmtMoney(paid)}</span></div>`:""}
+    <div class="t-grand">
       <span class="lbl">${isPaid?"ชำระครบแล้ว · PAID IN FULL":"ยอดที่ต้องชำระ · AMOUNT DUE"}</span>
       <span class="baht mono">฿ ${fmtMoney(isPaid?0:remaining)}</span>
     </div>
