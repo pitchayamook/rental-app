@@ -242,7 +242,12 @@ table.tbl .num-cell{font-family:'IBM Plex Mono',monospace;font-size:12px;text-al
       <p>ระบบจัดการหอพัก</p>
     </div>
     <nav class="sidebar-nav">
-      <button class="nav-item active" onclick="showPage('rooms')" id="nav-rooms">
+      <button class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        ภาพรวม
+      </button>
+      <div class="nav-sep"></div>
+      <button class="nav-item" onclick="showPage('rooms')" id="nav-rooms">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
         ห้องเช่า
       </button>
@@ -282,7 +287,8 @@ table.tbl .num-cell{font-family:'IBM Plex Mono',monospace;font-size:12px;text-al
   </aside>
 
   <main id="content">
-    <div id="page-rooms"></div>
+    <div id="page-dashboard"></div>
+    <div id="page-rooms" style="display:none"></div>
     <div id="page-meters" style="display:none"></div>
     <div id="page-expenses" style="display:none"></div>
     <div id="page-summary" style="display:none"></div>
@@ -524,13 +530,181 @@ let currentPage = "rooms";
 
 function showPage(page) {
   currentPage = page;
-  ["rooms","meters","expenses","summary","export","backup","settings"].forEach(p=>{
+  ["dashboard","rooms","meters","expenses","summary","export","backup","settings"].forEach(p=>{
     document.getElementById("page-"+p).style.display = p===page?"block":"none";
     document.getElementById("nav-"+p)?.classList.toggle("active",p===page);
   });
-  const renders = {rooms:renderRooms,meters:renderMeters,expenses:renderExpenses,summary:renderSummary,export:renderExport,backup:renderBackup,settings:renderSettings};
+  const renders = {dashboard:renderDashboard,rooms:renderRooms,meters:renderMeters,expenses:renderExpenses,summary:renderSummary,export:renderExport,backup:renderBackup,settings:renderSettings};
   renders[page]?.();
 }
+
+// ═══════════════════════════════════════════════════════
+//  PAGE: DASHBOARD (ภาพรวม)
+// ═══════════════════════════════════════════════════════
+// สรุปตัวเลขการเงินของเดือนหนึ่ง ๆ (ใช้ซ้ำทั้งหน้าภาพรวมและกราฟ)
+function computeMonthStats(month){
+  const occRooms = state.rooms.filter(r=>r.status==="occupied");
+  const exp = getExpenses(month);
+  let totalBilled=0, totalReceived=0;
+  let countPaid=0, countPartial=0, countUnpaid=0, countOverdue=0;
+  occRooms.forEach(r=>{
+    const billed = getRoomBillTotal(r.id, month);
+    const p = getRoomPayment(r.id, month);
+    totalBilled += billed;
+    totalReceived += Math.min(p.paidAmount||0, billed);
+    const st = getRoomPaymentStatus(r.id, month);
+    if (st==="paid") countPaid++;
+    else if (st==="partial") countPartial++;
+    else if (st==="overdue") countOverdue++;
+    else if (st==="unpaid") countUnpaid++;
+  });
+  const otherTotal = (exp.other||[]).reduce((s,o)=>s+(parseFloat(o.amount)||0),0);
+  const totalExpense = (exp.water||0)+(exp.elec||0)+(exp.carLoan||0)+otherTotal;
+  const outstanding = Math.max(0, totalBilled - totalReceived);
+  return {
+    occCount: occRooms.length,
+    totalBilled, totalReceived, totalExpense, outstanding,
+    profit: totalReceived - totalExpense,
+    countPaid, countPartial, countUnpaid, countOverdue
+  };
+}
+
+const TH_MONTH_SHORT = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+
+function renderDashboard(){
+  const month = state.currentMonth;
+  const total = state.rooms.length;
+  const occ = state.rooms.filter(r=>r.status==="occupied").length;
+  const vac = state.rooms.filter(r=>r.status==="vacant").length;
+  const maint = state.rooms.filter(r=>r.status==="maintenance").length;
+  const occPct = total ? Math.round(occ/total*100) : 0;
+  const s = computeMonthStats(month);
+
+  // กราฟรายรับย้อนหลัง 6 เดือน (เก่า → ใหม่)
+  const series = getMonthList(6).reverse().map(m=>({m, ...computeMonthStats(m)}));
+  const maxBilled = Math.max(1, ...series.map(x=>x.totalBilled));
+  const chart = series.map(x=>{
+    const billedPct = x.totalBilled>0 ? Math.max(4, Math.round(x.totalBilled/maxBilled*100)) : 2;
+    const recvPct = x.totalBilled>0 ? Math.round(x.totalReceived/x.totalBilled*100) : 0;
+    const mm = parseInt(x.m.split("-")[1]);
+    const isCur = x.m===month;
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%">
+      <div style="font-size:10px;color:var(--text2);font-weight:600;height:13px">${x.totalReceived>0?formatBaht(x.totalReceived):""}</div>
+      <div style="flex:1;width:100%;max-width:46px;display:flex;align-items:flex-end;margin:0 auto">
+        <div title="เรียกเก็บ ${formatBaht(x.totalBilled)} · รับจริง ${formatBaht(x.totalReceived)}" style="width:100%;height:${billedPct}%;background:var(--surface3);border-radius:6px 6px 0 0;position:relative">
+          <div style="position:absolute;bottom:0;left:0;width:100%;height:${recvPct}%;background:var(--green);border-radius:${recvPct>=99?"6px 6px 0 0":"0"}"></div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:${isCur?"var(--text)":"var(--text3)"};font-weight:${isCur?"700":"400"}">${TH_MONTH_SHORT[mm-1]}</div>
+    </div>`;
+  }).join("");
+
+  // ห้องที่ค้างชำระเดือนนี้ (ค้าง/บางส่วน/เกินกำหนด) เรียงเกินกำหนดก่อน
+  const order = {overdue:0, unpaid:1, partial:2};
+  const dueRooms = state.rooms
+    .filter(r=>r.status==="occupied")
+    .map(r=>{
+      const billed = getRoomBillTotal(r.id, month);
+      const p = getRoomPayment(r.id, month);
+      const rem = Math.max(0, billed - Math.min(p.paidAmount||0, billed));
+      return {r, st:getRoomPaymentStatus(r.id, month), rem};
+    })
+    .filter(x=>x.st==="overdue"||x.st==="unpaid"||x.st==="partial")
+    .sort((a,b)=>(order[a.st]-order[b.st]) || (b.rem-a.rem));
+
+  document.getElementById("page-dashboard").innerHTML = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">ภาพรวม</div>
+      <div class="page-sub">${thMonthLabel(month)}</div>
+    </div>
+    ${monthSelectHTML("dash-month",month,"changeDashMonth")}
+  </div>
+  <div class="page-body">
+    <!-- KPI cards -->
+    <div class="stat-grid">
+      <div class="stat-card" style="cursor:pointer" onclick="showPage('rooms')">
+        <div class="num">${occ}<span style="font-size:16px;color:var(--text3)">/${total}</span></div>
+        <div class="lbl">ห้องมีผู้เช่า</div>
+        <div class="sub">${occPct}% เต็ม · ว่าง ${vac}${maint?` · ซ่อม ${maint}`:""}</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer" onclick="showPage('summary')">
+        <div class="num green">${formatBaht(s.totalReceived)}</div>
+        <div class="lbl">รับชำระแล้ว (เดือนนี้)</div>
+        <div class="sub">เรียกเก็บ ${formatBaht(s.totalBilled)}</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer" onclick="showPage('summary')">
+        <div class="num ${s.outstanding>0?"amber":"green"}">${formatBaht(s.outstanding)}</div>
+        <div class="lbl">ยอดค้างชำระ</div>
+        <div class="sub">${s.countOverdue+s.countUnpaid+s.countPartial} ห้องค้าง</div>
+      </div>
+      <div class="stat-card">
+        <div class="num ${s.profit>=0?"green":"red"}">${formatBaht(s.profit)}</div>
+        <div class="lbl">กำไรสุทธิ (เงินสด)</div>
+        <div class="sub">รับจริง − รายจ่าย</div>
+      </div>
+    </div>
+
+    <!-- Occupancy bar -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:600">อัตราการเข้าพัก</span>
+          <span style="font-size:13px;color:var(--text2)">${occ} จาก ${total} ห้อง · <strong style="color:var(--text)">${occPct}%</strong></span>
+        </div>
+        <div style="height:12px;background:var(--surface3);border-radius:6px;overflow:hidden;display:flex">
+          <div style="width:${occPct}%;background:var(--amber)" title="มีผู้เช่า ${occ}"></div>
+          <div style="width:${total?Math.round(maint/total*100):0}%;background:var(--red)" title="ซ่อมบำรุง ${maint}"></div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text2)">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--amber);margin-right:4px"></span>มีผู้เช่า ${occ}</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--surface3);margin-right:4px"></span>ว่าง ${vac}</span>
+          ${maint?`<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--red);margin-right:4px"></span>ซ่อมบำรุง ${maint}</span>`:""}
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px">
+      <!-- Revenue chart -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">รายรับย้อนหลัง 6 เดือน</span>
+          <div style="display:flex;gap:12px;font-size:11px;color:var(--text2)">
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--green);margin-right:4px"></span>รับจริง</span>
+            <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--surface3);margin-right:4px"></span>เรียกเก็บ</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;align-items:flex-end;gap:8px;height:170px">${chart}</div>
+        </div>
+      </div>
+
+      <!-- Outstanding rooms -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">ห้องที่ต้องตามเก็บ</span><span style="font-size:12px;color:var(--text2)">${dueRooms.length} ห้อง</span></div>
+        <div class="card-body" style="padding:0">
+          ${dueRooms.length===0
+            ? `<div style="padding:32px 16px;text-align:center;color:var(--green);font-size:13px">✓ เก็บครบทุกห้องแล้ว</div>`
+            : dueRooms.slice(0,8).map(x=>`
+              <div onclick="openRoomDetail('${esc(x.r.id)}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer">
+                <div style="min-width:0">
+                  <div style="font-size:13px;font-weight:600">ห้อง ${esc(x.r.label)}</div>
+                  <div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.r.tenant||"—")}</div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;margin-left:8px">
+                  <div style="font-size:13px;font-weight:700;color:var(--red)">${formatBaht(x.rem)}</div>
+                  <div style="margin-top:2px">${paymentPillHTML(x.st)}</div>
+                </div>
+              </div>`).join("")
+          }
+          ${dueRooms.length>8?`<div style="padding:8px 16px;text-align:center"><a onclick="showPage('summary')" style="font-size:12px;color:var(--blue);cursor:pointer">ดูทั้งหมด ${dueRooms.length} ห้อง →</a></div>`:""}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function changeDashMonth(v){ state.currentMonth=v; save(); renderDashboard(); }
 
 // ═══════════════════════════════════════════════════════
 //  PAGE: ROOMS
@@ -2326,14 +2500,14 @@ async function enterApp(){
   cloudReady = true;
   applySettingsToConsts();
   updateUserUI();
-  showPage("rooms");
+  showPage("dashboard");
 }
 
 // โหมดออฟไลน์: ยังไม่ได้ตั้งค่า Supabase → ใช้ localStorage อย่างเดียว
 function bootLocalOnly(){
   hideLoginScreen();
   applySettingsToConsts();
-  showPage("rooms");
+  showPage("dashboard");
   const bar = document.createElement("div");
   bar.className = "login-offline";
   bar.textContent = "⚠ โหมดออฟไลน์ — ยังไม่ได้ตั้งค่า Supabase (ข้อมูลเก็บในเครื่องนี้เท่านั้น)";
