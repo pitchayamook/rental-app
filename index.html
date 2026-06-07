@@ -884,18 +884,57 @@ function openRoomDetail(id) {
       <input class="form-input" type="number" id="rm-price" value="${room.price}" oninput="markRoomDirty();updateRoomMeterCalc()"/>
     </div>
 
-    <div class="sec-label">ข้อมูลผู้เช่า</div>
+    <div class="sec-label">ข้อมูลผู้เช่า <span style="color:var(--text3);font-weight:400;font-size:11px">(ไม่บังคับกรอก)</span></div>
     <div class="form-group">
       <label class="form-label">ชื่อ-นามสกุล</label>
-      <input class="form-input" type="text" id="rm-tenant" value="${esc(room.tenant||"")}" oninput="markRoomDirty()"/>
+      <input class="form-input" type="text" id="rm-tenant" value="${esc(room.tenant||"")}" oninput="markRoomDirty()" placeholder="เช่น สมชาย ใจดี"/>
     </div>
-    <div class="form-group">
-      <label class="form-label">เบอร์โทรศัพท์</label>
-      <input class="form-input" type="tel" id="rm-phone" value="${esc(room.phone||"")}" oninput="markRoomDirty()"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label class="form-label">เบอร์โทรศัพท์</label>
+        <input class="form-input" type="tel" id="rm-phone" value="${esc(room.phone||"")}" oninput="markRoomDirty()" placeholder="08X-XXX-XXXX"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เลขบัตรประชาชน</label>
+        <input class="form-input" type="text" id="rm-idcard" value="${esc(room.idCard||"")}" oninput="markRoomDirty()" placeholder="X-XXXX-XXXXX-XX-X" maxlength="17"/>
+      </div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group">
+        <label class="form-label">วันที่เริ่มเช่า <span style="color:var(--text3);font-weight:400">(ค.ศ.)</span></label>
+        <input class="form-input" type="date" id="rm-start" value="${esc(room.startDate||"")}" oninput="markRoomDirty()"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">วันหมดสัญญา <span style="color:var(--text3);font-weight:400">(ค.ศ.)</span></label>
+        <input class="form-input" type="date" id="rm-end" value="${esc(room.endDate||"")}" oninput="markRoomDirty()"/>
+      </div>
+    </div>
+
+    <div class="sec-label">เงินมัดจำ / ประกัน <span style="color:var(--text3);font-weight:400;font-size:11px">(ไม่บังคับกรอก)</span></div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">จำนวนเงินมัดจำ (บาท)</label>
+          <input class="form-input" type="number" id="rm-deposit" value="${room.deposit||""}" oninput="markRoomDirty()" placeholder="0" min="0"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">วันที่รับมัดจำ</label>
+          <input class="form-input" type="date" id="rm-deposit-date" value="${esc(room.depositDate||"")}" oninput="markRoomDirty()"/>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:10px;margin-bottom:0">
+        <label class="form-label">สถานะมัดจำ</label>
+        <select class="form-input" id="rm-deposit-status" onchange="markRoomDirty()">
+          <option value="holding" ${(room.depositStatus||"holding")==="holding"?"selected":""}>ถือไว้ (ยังไม่คืน)</option>
+          <option value="returned" ${room.depositStatus==="returned"?"selected":""}>คืนแล้ว</option>
+          <option value="deducted" ${room.depositStatus==="deducted"?"selected":""}>หักค่าเสียหาย</option>
+        </select>
+      </div>
+    </div>
+
     <div class="form-group">
-      <label class="form-label">วันที่เริ่มเช่า <span style="color:var(--text3);font-weight:400">(ค.ศ.)</span></label>
-      <input class="form-input" type="date" id="rm-start" value="${esc(room.startDate||"")}" oninput="markRoomDirty()"/>
+      <label class="form-label">หมายเหตุ</label>
+      <textarea class="form-input" id="rm-note" rows="2" oninput="markRoomDirty()" placeholder="บันทึกเพิ่มเติม เช่น มีสัตว์เลี้ยง, จอดรถ 1 คัน..." style="resize:vertical">${esc(room.note||"")}</textarea>
     </div>
 
     <div class="sec-label">มิเตอร์ ${thMonthLabel(month)}</div>
@@ -1100,7 +1139,13 @@ function saveRoomDetail(id) {
   room.price  = parseFloat(val("rm-price"))||room.price;
   room.tenant = val("rm-tenant")||null;
   room.phone  = val("rm-phone")||null;
+  room.idCard = val("rm-idcard")||null;
   room.startDate = val("rm-start")||null;
+  room.endDate = val("rm-end")||null;
+  room.deposit = parseFloat(val("rm-deposit"))||0;
+  room.depositDate = val("rm-deposit-date")||null;
+  room.depositStatus = val("rm-deposit-status")||"holding";
+  room.note = val("rm-note")||null;
   if (!room.tenant && room.status==="occupied") room.status="vacant";
 
   const month=state.currentMonth;
