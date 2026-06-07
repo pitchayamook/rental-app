@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-sarabun);
+}
+
+html,
+body {
+  background: #f2f2f7;
+  color: #1c1c1e;
+}
