@@ -388,23 +388,69 @@ function defaultExpenses() {
   return { water:0, elec:0, carLoan:0, other:[] };
 }
 
+// ═══════════════════════════════════════════════════════
+//  SCHEMA VERSION & MIGRATION
+//  เวลาเพิ่ม/แก้ฟิลด์ในอนาคต ให้ขยับ SCHEMA_VERSION แล้ว:
+//   • "เพิ่มฟิลด์ใหม่"  → ใส่ค่า default ใน ROOM_DEFAULTS (normalizeState เติมให้เองทุกครั้งที่โหลด)
+//   • "แปลงค่า/เปลี่ยนชื่อฟิลด์" → เขียน migration ใน MIGRATIONS (key = เวอร์ชันปลายทาง)
+//  กันบั๊กแบบ "ฟิลด์ใหม่หายตอนโหลด/นำเข้า" (เช่นที่เคยเกิดกับข้อมูลมัดจำ/โปรไฟล์)
+// ═══════════════════════════════════════════════════════
+const SCHEMA_VERSION = 2;
+
+// ฟิลด์ห้องที่อาจไม่มีในข้อมูลเก่า → เติม default ให้ครบ (idempotent)
+const ROOM_DEFAULTS = {
+  idCard: null, endDate: null,
+  deposit: 0, depositDate: null, depositStatus: "holding", note: null
+};
+
+// migration สำหรับ "แปลงค่า/โครงสร้าง" เท่านั้น (การเพิ่มฟิลด์ใช้ ROOM_DEFAULTS ด้านบน)
+// ตัวอย่าง:  3: (s) => { s.rooms.forEach(r => r.price = Math.round(r.price)); return s; }
+const MIGRATIONS = {};
+
+// เติมฟิลด์ที่ขาด + บังคับโครงสร้างหลักให้ครบ (lenient — ไม่ throw)
+function normalizeState(s) {
+  if (!s || typeof s !== "object") s = {};
+  if (Array.isArray(s.rooms)) {
+    s.rooms.forEach(r => {
+      if (!r || typeof r !== "object") return;
+      for (const k in ROOM_DEFAULTS) if (r[k] === undefined) r[k] = ROOM_DEFAULTS[k];
+      if (!r.meters   || typeof r.meters   !== "object") r.meters = {};
+      if (!r.payments || typeof r.payments !== "object") r.payments = {};
+    });
+  } else s.rooms = createDefaultRooms();
+  if (!s.expenses || typeof s.expenses !== "object") s.expenses = {};
+  s.settings = { ...DEFAULT_SETTINGS, ...(s.settings || {}) };
+  if (!s.currentMonth) s.currentMonth = currentMonthKey();
+  return s;
+}
+
+// อัปเกรดข้อมูลให้เป็นเวอร์ชันล่าสุด — ใช้กับทุกทางที่โหลด state (localStorage / คลาวด์ / นำเข้า)
+function migrateState(raw) {
+  let s = (raw && typeof raw === "object") ? raw : {};
+  let v = Number(s.version) || 1;          // ข้อมูลเก่าที่ไม่มี version = เวอร์ชัน 1
+  while (v < SCHEMA_VERSION) {
+    v++;
+    if (MIGRATIONS[v]) s = MIGRATIONS[v](s) || s;
+  }
+  s = normalizeState(s);
+  s.version = SCHEMA_VERSION;
+  return s;
+}
+
+// state เริ่มต้น (ข้อมูลตัวอย่าง) — ผ่าน migrateState เพื่อให้ทุกฟิลด์ครบ + ติดเวอร์ชัน
+function freshState() {
+  return migrateState({ rooms: createDefaultRooms(), expenses: {}, settings: defaultSettings(), currentMonth: currentMonthKey() });
+}
+
 // STATE
 let state = load();
 
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem("myroom_v2") || "null");
-    if (s && s.rooms && s.expenses) {
-      s.settings = {...DEFAULT_SETTINGS, ...(s.settings||{})};
-      return s;
-    }
+    if (s && s.rooms && s.expenses) return migrateState(s);
   } catch(e){}
-  return {
-    rooms: createDefaultRooms(),
-    expenses: {},   // keyed by "YYYY-MM"
-    settings: defaultSettings(),
-    currentMonth: currentMonthKey()
-  };
+  return freshState();
 }
 
 function save() {
@@ -2128,7 +2174,10 @@ function validateImportedState(raw) {
     }
   }
 
-  return { rooms: cleanRooms, expenses: cleanExpenses, settings: cleanSettings, currentMonth };
+  return migrateState({
+    rooms: cleanRooms, expenses: cleanExpenses, settings: cleanSettings,
+    currentMonth, version: Number(raw.version) || 1
+  });
 }
 
 function importFromJSON(e) {
@@ -2172,7 +2221,7 @@ async function confirmClearAll() {
   );
   if (!confirm2) return;
   localStorage.removeItem("myroom_v2");
-  state = { rooms: createDefaultRooms(), expenses: {}, settings: defaultSettings(), currentMonth: currentMonthKey() };
+  state = freshState();
   applySettingsToConsts();
   save();
   toast("ล้างข้อมูลเรียบร้อย");
