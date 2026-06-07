@@ -2081,7 +2081,13 @@ function validateImportedState(raw) {
       status,
       tenant: r.tenant ? String(r.tenant).slice(0,100) : null,
       phone: r.phone ? String(r.phone).slice(0,30) : null,
+      idCard: r.idCard ? String(r.idCard).slice(0,30) : null,
       startDate: r.startDate ? String(r.startDate).slice(0,20) : null,
+      endDate: r.endDate ? String(r.endDate).slice(0,20) : null,
+      deposit: Math.max(0, Number(r.deposit)||0),
+      depositDate: r.depositDate ? String(r.depositDate).slice(0,20) : null,
+      depositStatus: ["holding","returned","deducted"].includes(r.depositStatus) ? r.depositStatus : "holding",
+      note: r.note ? String(r.note).slice(0,500) : null,
       meters,
       payments
     };
