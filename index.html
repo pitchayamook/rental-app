@@ -76,6 +76,7 @@ input,select,textarea{font-family:inherit}
 .room-card.occupied::before{background:var(--amber)}
 .room-card.vacant::before{background:var(--green)}
 .room-card.maintenance::before{background:var(--red)}
+.room-card.is-overdue{box-shadow:0 0 0 2px var(--red),var(--shadow)}
 .room-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
 .room-card .rnum{font-size:22px;font-weight:700;letter-spacing:-.03em}
 .room-card .rstatus{font-size:11px;font-weight:500;margin-top:4px;display:flex;align-items:center;gap:4px}
@@ -661,6 +662,17 @@ function renderDashboard(){
     .filter(x=>x.st==="overdue"||x.st==="unpaid"||x.st==="partial")
     .sort((a,b)=>(order[a.st]-order[b.st]) || (b.rem-a.rem));
 
+  // สัญญาใกล้หมด/หมดแล้ว (ภายใน 30 วัน) — แจ้งเตือนในแอป ไม่ต้องใช้ server
+  const today0 = new Date(); today0.setHours(0,0,0,0);
+  const expiring = state.rooms
+    .filter(r=>r.status==="occupied" && r.endDate)
+    .map(r=>{
+      const end = new Date(r.endDate+"T00:00:00");
+      return {r, days: Math.round((end - today0)/86400000)};
+    })
+    .filter(x=>!isNaN(x.days) && x.days<=30)
+    .sort((a,b)=>a.days-b.days);
+
   document.getElementById("page-dashboard").innerHTML = `
   <div class="page-header">
     <div>
@@ -693,6 +705,22 @@ function renderDashboard(){
         <div class="sub">รับจริง − รายจ่าย</div>
       </div>
     </div>
+
+    ${expiring.length?`<div class="card" style="margin-bottom:16px;border:1px solid var(--amber-border)">
+      <div class="card-body" style="padding:14px 18px;background:var(--amber-bg)">
+        <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:8px">⏰ สัญญาใกล้หมด/หมดอายุ (${expiring.length})</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          ${expiring.slice(0,6).map(x=>{
+            const tag = x.days<0?`หมดแล้ว ${-x.days} วัน`:x.days===0?`หมดวันนี้`:`อีก ${x.days} วัน`;
+            return `<div onclick="openRoomDetail('${esc(x.r.id)}')" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:13px;gap:8px">
+              <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><strong>ห้อง ${esc(x.r.label)}</strong> · ${esc(x.r.tenant||"—")}</span>
+              <span style="flex-shrink:0;font-weight:600;color:${x.days<0?"var(--red)":"var(--amber)"}">${tag} <span style="color:var(--text3);font-weight:400">(${esc(x.r.endDate)})</span></span>
+            </div>`;
+          }).join("")}
+          ${expiring.length>6?`<div style="font-size:12px;color:var(--text2)">…และอีก ${expiring.length-6} ห้อง</div>`:""}
+        </div>
+      </div>
+    </div>`:""}
 
     <!-- Occupancy bar -->
     <div class="card" style="margin-bottom:16px">
@@ -807,7 +835,7 @@ function roomCardHTML(r) {
     ? `<div style="margin-top:6px">${paymentPillHTML(payStatus)}</div>`
     : "";
   return `
-  <div class="room-card ${r.status}" onclick="openRoomDetail('${esc(r.id)}')">
+  <div class="room-card ${r.status}${payStatus==='overdue'?' is-overdue':''}" onclick="openRoomDetail('${esc(r.id)}')">
     ${r.isSuite?'<div class="suite-badge">SUITE</div>':""}
     <div class="rnum">${esc(r.label)}</div>
     <div class="rstatus"><span class="dot" style="background:${s.dot}"></span>${s.label}</div>
