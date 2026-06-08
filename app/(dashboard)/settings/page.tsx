@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getPropertyWithSettings } from "@/lib/queries/property";
 import { updateSettings } from "./actions";
 
@@ -12,6 +13,7 @@ export default async function SettingsPage({
   ]);
 
   return (
+    <>
     <form action={updateSettings}>
       <div className="mb-5 flex items-center justify-between">
         <div>
@@ -75,6 +77,13 @@ export default async function SettingsPage({
         </button>
       </div>
     </form>
+
+      <div className="mt-4">
+        <Link href="/backup" className="text-sm text-blue-600">
+          🗄 สำรองข้อมูล (ดาวน์โหลด JSON) →
+        </Link>
+      </div>
+    </>
   );
 }
 
