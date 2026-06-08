@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getRoomsOverview } from "@/lib/queries/rooms";
 import { currentPeriod } from "@/lib/domain/thai-date";
 import { formatBaht } from "@/lib/domain/money";
@@ -27,9 +28,10 @@ export default async function RoomsPage() {
         {rooms.map((r) => {
           const st = STATUS[r.status];
           return (
-            <div
+            <Link
               key={r.room.id}
-              className={`relative overflow-hidden rounded-2xl bg-white p-4 shadow-sm ${
+              href={`/rooms/${r.room.id}`}
+              className={`relative block overflow-hidden rounded-2xl bg-white p-4 shadow-sm transition hover:shadow-md ${
                 r.status === "overdue" ? "ring-2 ring-red-400" : ""
               }`}
             >
@@ -57,7 +59,7 @@ export default async function RoomsPage() {
                   {st.label}
                 </span>
               )}
-            </div>
+            </Link>
           );
         })}
       </div>
