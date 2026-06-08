@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Sarabun, IBM_Plex_Mono } from "next/font/google";
+import { SWRegister } from "@/components/sw-register";
 import "./globals.css";
 
 const sarabun = Sarabun({
@@ -34,7 +35,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th" className={`${sarabun.variable} ${mono.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <SWRegister />
+        {children}
+      </body>
     </html>
   );
 }
