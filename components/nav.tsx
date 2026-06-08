@@ -8,6 +8,7 @@ const ITEMS = [
   { href: "/rooms", label: "ห้องพัก" },
   { href: "/meters", label: "มิเตอร์" },
   { href: "/summary", label: "สรุป" },
+  { href: "/invoices", label: "ใบแจ้ง" },
   { href: "/settings", label: "ตั้งค่า" },
 ];
 

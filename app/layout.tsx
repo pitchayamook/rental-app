@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Sarabun } from "next/font/google";
+import { Sarabun, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
 const sarabun = Sarabun({
   subsets: ["thai", "latin"],
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-sarabun",
+  display: "swap",
+});
+
+const mono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -26,7 +33,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="th" className={sarabun.variable}>
+    <html lang="th" className={`${sarabun.variable} ${mono.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );
