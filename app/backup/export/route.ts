@@ -3,6 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 // ดาวน์โหลดข้อมูลทั้งหมดของเจ้าของเป็นไฟล์ JSON (RLS จำกัดเฉพาะข้อมูลตัวเอง)
 export async function GET() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return new Response("unauthorized", { status: 401 });
+
   const { data: prop } = await supabase
     .from("properties")
     .select("*")

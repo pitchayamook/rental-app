@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { getInvoices } from "@/lib/queries/invoices";
 import { currentPeriod, thMonthLabel, thLongDate, TH_MONTHS_SHORT } from "@/lib/domain/thai-date";
 import { fmtMoney } from "@/lib/domain/money";
@@ -83,6 +85,12 @@ export default async function PrintInvoicesPage({
   searchParams: Promise<{ month?: string; rooms?: string }>;
 }) {
   const sp = await searchParams;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const period = sp.month && /^\d{4}-\d{2}$/.test(sp.month) ? sp.month : currentPeriod();
   const roomIds = sp.rooms && sp.rooms !== "all" ? sp.rooms.split(",") : undefined;
   const data = await getInvoices(period, roomIds);
